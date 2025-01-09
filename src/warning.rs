@@ -29,3 +29,12 @@ impl Warnings {
         }
     }
 }
+
+impl IntoIterator for Warnings {
+    type Item = Warning;
+    type IntoIter = std::vec::IntoIter<Warning>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
