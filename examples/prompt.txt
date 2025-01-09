@@ -1,0 +1,27 @@
+ほげほげほげ
+
+#ef file1.js
+
+ふがふがふが
+
+#ef dir1/file2.js
+
+ぴよぴよぴよ
+
+#ef dir1
+
+ぶひぶひぶひ
+
+#ef dir2/*.txt
+
+なはなはなは
+
+#ef dir2/**
+
+にやにやにや
+
+#ef dir2/**/*.txt
+
+げへげへげへ
+
+#efr dir2/file\d\.txt
