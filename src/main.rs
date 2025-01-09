@@ -3,6 +3,7 @@ use std::error::Error;
 
 mod cli;
 mod error;
+mod path_resolver;
 mod template;
 mod warning;
 
@@ -33,11 +34,43 @@ fn main() {
 
 fn run(cli: cli::Cli, warnings: &mut warning::Warnings) -> error::Result<()> {
     let template = template::Template::from_file(&cli.template_path)?;
+    let mut resolver = path_resolver::PathResolver::new(&cli.template_path);
 
-    // デバッグ出力（後で削除）
+    // テンプレートの各行を処理
     for line in template.lines() {
-        println!("{:?}", line);
+        match line {
+            template::TemplateLine::Text(text) => {
+                println!("{}", text);
+            }
+            template::TemplateLine::Directive(directive) => {
+                match directive {
+                    template::Directive::Glob(pattern) => {
+                        let paths = resolver.resolve_glob(&pattern)?;
+                        for path in paths {
+                            // TODO: .eftemplateの処理を実装したら、
+                            // ここでファイル内容を適切なフォーマットで出力する
+                            if let Some(path_str) = path.to_str() {
+                                println!("Found file: {}", path_str);
+                            }
+                        }
+                    }
+                    template::Directive::Regex(pattern) => {
+                        let paths = resolver.resolve_regex(&pattern)?;
+                        for path in paths {
+                            // TODO: .eftemplateの処理を実装したら、
+                            // ここでファイル内容を適切なフォーマットで出力する
+                            if let Some(path_str) = path.to_str() {
+                                println!("Found file: {}", path_str);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    // PathResolverからの警告を統合
+    warnings.extend(resolver.take_warnings());
 
     Ok(())
 }

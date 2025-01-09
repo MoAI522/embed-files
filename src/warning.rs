@@ -19,6 +19,10 @@ impl Warnings {
         self.0.push(warning);
     }
 
+    pub fn extend(&mut self, other: Warnings) {
+        self.0.extend(other.0);
+    }
+
     pub fn print_all(&self) {
         for warning in &self.0 {
             eprintln!("Warning: {}", warning);

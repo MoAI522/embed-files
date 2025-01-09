@@ -4,19 +4,15 @@
 
 ふがふがふが
 
-#ef dir1/file2.js
+#ef dir1/file2.md
 
 ぴよぴよぴよ
 
-#ef dir1
+#ef dir1/*
 
 ぶひぶひぶひ
 
 #ef dir2/*.txt
-
-なはなはなは
-
-#ef dir2/**
 
 にやにやにや
 
