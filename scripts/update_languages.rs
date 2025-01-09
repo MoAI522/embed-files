@@ -45,6 +45,15 @@ fn generate_mappings(yaml_content: &str) -> Result<ExtensionMappings> {
         }
     }
 
+    // NOTE: 普通に変なマッピング紛れ込むので、手動で修正 意味ない！
+    mappings.insert("txt".to_string(), "plaintext".to_string());
+    mappings.insert("tsx".to_string(), "typescript".to_string());
+    mappings.insert("md".to_string(), "markdown".to_string());
+    mappings.insert("json".to_string(), "json".to_string());
+    mappings.insert("yml".to_string(), "yaml".to_string());
+    mappings.insert("rs".to_string(), "rust".to_string());
+    mappings.insert("php".to_string(), "php".to_string());
+
     println!("{} {}", "Total mappings generated:".green(), mappings.len());
     Ok(ExtensionMappings(mappings))
 }

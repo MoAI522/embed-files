@@ -1,8 +1,8 @@
 [package]
-name = "embed-files"
+name = "ef"
 version = "0.1.0"
 edition = "2021"
-default-run = "embed-files"
+default-run = "ef"
 
 [dependencies]
 anyhow = "1.0.95"
