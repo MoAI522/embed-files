@@ -8,13 +8,31 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.95"
 clap = { version = "4.5.24", features = ["derive"] }
+colored = "3.0.0"
+env_logger = "0.11.6"
 glob = "0.3.2"
 insta = "1.42.0"
+log = "0.4.22"
 pathdiff = "0.2.3"
 regex = "1.11.1"
+reqwest = { version = "0.12.12", features = ["blocking"] }
+ron = "0.8.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_yaml = "0.9.34"
 tempfile = "3.15.0"
 thiserror = "2.0.10"
+
+[[bin]]
+name = "update-languages"
+path = "scripts/update_languages.rs"
+
+[dev-dependencies]
+mockito = "1.6.1"
+similar-asserts = "1.6.0"
+temp-env = "0.3.6"
+tempfile = "3.15.0"
 
 ```
 
@@ -1070,4 +1088,4 @@ fn test_debug_flag() {
 
 ```
 
-.eftemplateに関する処理を実装します。
+
