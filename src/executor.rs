@@ -6,18 +6,15 @@ use crate::template;
 use crate::warning;
 use std::io::Write;
 
-/// コマンドの実行ロジック
 pub fn execute<W: Write>(
     cli: cli::Cli,
     writer: &mut W,
     warnings: &mut warning::Warnings,
 ) -> error::Result<()> {
-    // テンプレートを読み込み
     let template = template::Template::from_file(&cli.template_path)?;
-    let mut resolver = path_resolver::PathResolver::new(&cli.template_path);
+    let mut resolver = path_resolver::PathResolver::new()?;
     let eftemplate = eftemplate::EfTemplate::find_and_load(&cli.template_path)?;
 
-    // テンプレートの各行を処理
     for line in template.lines() {
         match line {
             template::TemplateLine::Text(text) => {
@@ -27,18 +24,32 @@ pub fn execute<W: Write>(
                 template::Directive::Glob(pattern) => {
                     let paths = resolver.resolve_glob(&pattern)?;
                     for path in paths {
-                        if let Ok(content) = std::fs::read_to_string(&path) {
-                            let formatted = eftemplate.format(&path, &content);
-                            write!(writer, "{}", formatted)?;
+                        match std::fs::read_to_string(&path) {
+                            Ok(content) => {
+                                let formatted = eftemplate.format(&path, &content);
+                                writeln!(writer, "{}", formatted)?;
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to read file {:?}: {}", path, e);
+                                warnings
+                                    .push(warning::Warning::FileNotFound { path: path.clone() });
+                            }
                         }
                     }
                 }
                 template::Directive::Regex(pattern) => {
                     let paths = resolver.resolve_regex(&pattern)?;
                     for path in paths {
-                        if let Ok(content) = std::fs::read_to_string(&path) {
-                            let formatted = eftemplate.format(&path, &content);
-                            write!(writer, "{}", formatted)?;
+                        match std::fs::read_to_string(&path) {
+                            Ok(content) => {
+                                let formatted = eftemplate.format(&path, &content);
+                                writeln!(writer, "{}", formatted)?;
+                            }
+                            Err(e) => {
+                                warnings
+                                    .push(warning::Warning::FileNotFound { path: path.clone() });
+                                eprintln!("Failed to read file {}: {}", path.display(), e);
+                            }
                         }
                     }
                 }
@@ -46,7 +57,6 @@ pub fn execute<W: Write>(
         }
     }
 
-    // PathResolverからの警告を統合
     warnings.extend(resolver.take_warnings());
 
     Ok(())

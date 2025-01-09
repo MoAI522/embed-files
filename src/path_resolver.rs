@@ -3,7 +3,7 @@ use crate::warning::{Warning, Warnings};
 use glob::glob;
 use regex::Regex;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
+use std::{env, fs, io};
 
 pub struct PathResolver {
     base_dir: PathBuf,
@@ -11,27 +11,17 @@ pub struct PathResolver {
 }
 
 impl PathResolver {
-    pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
-        let base_dir = base_path
-            .as_ref()
-            .parent()
-            .unwrap_or_else(|| Path::new("."))
-            .to_path_buf();
+    pub fn new() -> Result<Self> {
+        let base_dir = env::current_dir()?;
 
-        Self {
+        Ok(Self {
             base_dir,
             warnings: Warnings::new(),
-        }
+        })
     }
 
     pub fn resolve_glob(&mut self, pattern: &str) -> Result<Vec<PathBuf>> {
-        let full_pattern = if Path::new(pattern).is_absolute() {
-            pattern.to_string()
-        } else {
-            self.base_dir.join(pattern).to_string_lossy().to_string()
-        };
-
-        let paths = glob(&full_pattern).map_err(|e| Error::InvalidGlobPattern {
+        let paths = glob(&pattern).map_err(|e| Error::InvalidGlobPattern {
             pattern: pattern.to_string(),
             source: e,
         })?;
@@ -40,11 +30,12 @@ impl PathResolver {
         for entry in paths {
             match entry {
                 Ok(path) => {
-                    if path.starts_with(&self.base_dir) && self.is_valid_file(&path) {
+                    if self.is_valid_file(&path) {
                         result.push(path);
+                    } else {
                     }
                 }
-                Err(_) => {
+                Err(e) => {
                     self.warnings.push(Warning::FileNotFound {
                         path: PathBuf::from(pattern),
                     });
@@ -90,9 +81,16 @@ impl PathResolver {
                 let entry = entry?;
                 let path = entry.path();
 
+                // 絶対パスを相対パスに変換
+                let relative_path = if let Ok(rel_path) = path.strip_prefix(&self.base_dir) {
+                    rel_path.to_path_buf()
+                } else {
+                    path.clone()
+                };
+
                 if path.is_dir() {
                     self.walk_directory(&path, regex, results)?;
-                } else if let Some(path_str) = path.to_str() {
+                } else if let Some(path_str) = relative_path.to_str() {
                     if regex.is_match(path_str) && self.is_valid_file(&path) {
                         results.push(path);
                     }
@@ -107,9 +105,9 @@ impl PathResolver {
             return false;
         }
 
-        // ファイルの先頭部分を読んでバイナリファイルかどうかを判定
         if let Ok(content) = fs::read(path) {
-            !content.iter().take(1024).any(|&byte| byte == 0)
+            let is_valid = !content.iter().take(1024).any(|&byte| byte == 0);
+            is_valid
         } else {
             false
         }
@@ -124,45 +122,59 @@ impl PathResolver {
 mod tests {
     use super::*;
     use std::fs;
-    use tempfile::tempdir;
+    use tempfile::{tempdir, TempDir};
 
-    fn setup_test_files() -> (tempfile::TempDir, PathResolver) {
+    struct TestContext {
+        _temp_dir: TempDir, // TempDirをドロップされないように保持
+        resolver: PathResolver,
+    }
+
+    fn setup_test_files() -> Result<TestContext> {
         let temp_dir = tempdir().unwrap();
 
-        // テストファイルの作成
         fs::write(temp_dir.path().join("test1.txt"), "Hello, World!").unwrap();
         fs::write(temp_dir.path().join("test2.txt"), "Test content").unwrap();
 
-        let virtual_template_path = temp_dir.path().join("template.txt");
-        let resolver = PathResolver::new(virtual_template_path);
-        (temp_dir, resolver)
+        env::set_current_dir(temp_dir.path()).unwrap();
+
+        // PathResolverの作成を最後に行う
+        let resolver = PathResolver::new()?;
+
+        Ok(TestContext {
+            _temp_dir: temp_dir, // TempDirを保持
+            resolver,
+        })
     }
 
     #[test]
-    fn test_glob_resolution() {
-        let (_temp_dir, mut resolver) = setup_test_files();
-        let paths = resolver.resolve_glob("*.txt").unwrap();
+    fn test_glob_resolution() -> Result<()> {
+        let mut ctx = setup_test_files()?;
+        let paths = ctx.resolver.resolve_glob("*.txt")?;
         assert_eq!(paths.len(), 2);
+        Ok(())
     }
 
     #[test]
-    fn test_regex_resolution() {
-        let (_temp_dir, mut resolver) = setup_test_files();
-        let paths = resolver.resolve_regex(r".*\.txt$").unwrap();
+    fn test_regex_resolution() -> Result<()> {
+        let mut ctx = setup_test_files()?;
+        let paths = ctx.resolver.resolve_regex(r".*\.txt$")?;
         assert_eq!(paths.len(), 2);
+        Ok(())
     }
 
     #[test]
-    fn test_invalid_glob_pattern() {
-        let (_temp_dir, mut resolver) = setup_test_files();
-        let result = resolver.resolve_glob("[invalid");
+    fn test_invalid_glob_pattern() -> Result<()> {
+        let mut ctx = setup_test_files()?;
+        let result = ctx.resolver.resolve_glob("[invalid");
         assert!(result.is_err());
+        Ok(())
     }
 
     #[test]
-    fn test_invalid_regex_pattern() {
-        let (_temp_dir, mut resolver) = setup_test_files();
-        let result = resolver.resolve_regex("[invalid");
+    fn test_invalid_regex_pattern() -> Result<()> {
+        let mut ctx = setup_test_files()?;
+        let result = ctx.resolver.resolve_regex("[invalid");
         assert!(result.is_err());
+        Ok(())
     }
 }

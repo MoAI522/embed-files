@@ -9,7 +9,6 @@ pub mod path_resolver;
 pub mod template;
 pub mod warning;
 
-/// テスト用に公開する実行関数
 #[doc(hidden)]
 pub fn run_with_args(args: Vec<String>) -> error::Result<String> {
     let mut output = Vec::new();

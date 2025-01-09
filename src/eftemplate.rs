@@ -138,7 +138,10 @@ mod tests {
     fn test_language_detection() {
         let template = EfTemplate::default();
         assert_eq!(template.detect_language(Path::new("test.rs")), "rust");
-        assert_eq!(template.detect_language(Path::new("test.tsx")), "tsx");
+        assert_eq!(
+            template.detect_language(Path::new("test.tsx")),
+            "typescript"
+        );
         assert_eq!(template.detect_language(Path::new("test.js")), "javascript");
         assert_eq!(
             template.detect_language(Path::new("test.unknown")),
