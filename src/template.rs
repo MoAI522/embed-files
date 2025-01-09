@@ -33,10 +33,11 @@ impl Template {
                 let mut elements = parts.split_whitespace();
 
                 if let Some(directive_name) = elements.next() {
-                    let argument = elements.collect::<Vec<_>>().join(" ");
+                    let arguments = elements.collect::<Vec<_>>();
 
                     match directive_name {
                         "ef" => {
+                            let argument = arguments.join(" ");
                             if argument.is_empty() {
                                 TemplateLine::Text(line.to_string())
                             } else {
@@ -44,6 +45,7 @@ impl Template {
                             }
                         }
                         "efr" => {
+                            let argument = arguments.join(" ");
                             if argument.is_empty() {
                                 TemplateLine::Text(line.to_string())
                             } else {
