@@ -4,6 +4,7 @@ pub mod cli;
 pub mod eftemplate;
 pub mod error;
 mod executor;
+pub mod language_mapping;
 pub mod path_resolver;
 pub mod template;
 pub mod warning;

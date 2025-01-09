@@ -2,6 +2,7 @@ mod cli;
 mod eftemplate;
 mod error;
 mod executor;
+mod language_mapping;
 mod path_resolver;
 mod template;
 mod warning;

@@ -71,36 +71,14 @@ impl EfTemplate {
             .replace("{content}", content)
     }
 
-    /// ファイル拡張子から言語識別子を取得
     fn detect_language(&self, path: &Path) -> String {
         path.extension()
             .and_then(|ext| ext.to_str())
-            .map(|ext| match ext {
-                "tsx" => "tsx",
-                "jsx" => "jsx",
-                "js" => "javascript",
-                "ts" => "typescript",
-                "rs" => "rust",
-                "py" => "python",
-                "rb" => "ruby",
-                "php" => "php",
-                "java" => "java",
-                "c" => "c",
-                "cpp" => "cpp",
-                "h" => "cpp",
-                "hpp" => "cpp",
-                "css" => "css",
-                "html" => "html",
-                "xml" => "xml",
-                "json" => "json",
-                "yaml" => "yaml",
-                "yml" => "yaml",
-                "md" => "markdown",
-                "txt" => "text",
-                _ => "plaintext",
+            .map(|ext| {
+                crate::language_mapping::get_language_for_extension(ext)
+                    .unwrap_or_else(|| "plaintext".to_string())
             })
-            .unwrap_or("plaintext")
-            .to_string()
+            .unwrap()
     }
 }
 

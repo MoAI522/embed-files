@@ -299,6 +299,7 @@ dependencies = [
  "insta",
  "log",
  "mockito",
+ "once_cell",
  "pathdiff",
  "regex",
  "reqwest",
