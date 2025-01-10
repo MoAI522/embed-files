@@ -21,7 +21,14 @@ impl PathResolver {
     }
 
     pub fn resolve_glob(&mut self, pattern: &str) -> Result<Vec<PathBuf>> {
-        let paths = glob(&pattern).map_err(|e| Error::InvalidGlobPattern {
+        let current_dir = env::current_dir()?;
+        let full_pattern = if Path::new(pattern).is_relative() {
+            current_dir.join(pattern).to_string_lossy().into_owned()
+        } else {
+            pattern.to_string()
+        };
+
+        let paths = glob(&full_pattern).map_err(|e| Error::InvalidGlobPattern {
             pattern: pattern.to_string(),
             source: e,
         })?;
@@ -32,7 +39,6 @@ impl PathResolver {
                 Ok(path) => {
                     if self.is_valid_file(&path) {
                         result.push(path);
-                    } else {
                     }
                 }
                 Err(_) => {
@@ -131,17 +137,18 @@ mod tests {
 
     fn setup_test_files() -> Result<TestContext> {
         let temp_dir = tempdir().unwrap();
+        let temp_path = temp_dir.path();
 
-        fs::write(temp_dir.path().join("test1.txt"), "Hello, World!").unwrap();
-        fs::write(temp_dir.path().join("test2.txt"), "Test content").unwrap();
+        fs::create_dir_all(temp_path).unwrap();
+        fs::write(temp_path.join("test1.txt"), "Hello, World!").unwrap();
+        fs::write(temp_path.join("test2.txt"), "Test content").unwrap();
 
-        env::set_current_dir(temp_dir.path()).unwrap();
+        env::set_current_dir(temp_path).unwrap();
 
-        // PathResolverの作成を最後に行う
         let resolver = PathResolver::new()?;
 
         Ok(TestContext {
-            _temp_dir: temp_dir, // TempDirを保持
+            _temp_dir: temp_dir,
             resolver,
         })
     }

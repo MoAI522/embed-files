@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use tempfile::{tempdir, TempDir};
 
 pub struct TestEnv {
-    temp_dir: TempDir,
+    _temp_dir: TempDir,
     base_path: PathBuf,
 }
 
@@ -17,7 +17,7 @@ impl TestEnv {
         Self::setup_directory_structure(&base_path);
 
         Self {
-            temp_dir,
+            _temp_dir: temp_dir,
             base_path,
         }
     }
@@ -37,24 +37,14 @@ impl TestEnv {
         let full_path = self.base_path.join(path);
 
         if let Some(parent) = full_path.parent() {
-            fs::create_dir_all(parent)
-                .unwrap_or_else(|e| panic!("Failed to create directory {:?}: {}", parent, e));
+            fs::create_dir_all(parent).unwrap();
         }
 
-        fs::write(&full_path, content)
-            .unwrap_or_else(|e| panic!("Failed to write file {:?}: {}", full_path, e));
+        fs::write(&full_path, content).unwrap();
 
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&full_path, fs::Permissions::from_mode(0o644))
-                .unwrap_or_else(|e| panic!("Failed to set permissions for {:?}: {}", full_path, e));
-        }
-
-        full_path
-            .strip_prefix(&self.base_path)
-            .unwrap_or(&full_path)
-            .to_path_buf()
+        // カレントディレクトリからの相対パスを返す
+        let current_dir = env::current_dir().unwrap();
+        pathdiff::diff_paths(&full_path, &current_dir).unwrap_or_else(|| full_path.clone())
     }
 
     pub fn create_template(&self, content: &str) -> PathBuf {
@@ -69,23 +59,21 @@ impl TestEnv {
         &self.base_path
     }
 
-    // 新しいメソッド: テスト実行のためのスコープを作成
     pub fn run_test_in_scope<F, R>(&self, test_fn: F) -> R
     where
         F: FnOnce() -> R,
     {
-        // 現在のディレクトリを保存
         let original_dir = env::current_dir().expect("Failed to get current directory");
 
-        // テスト用ディレクトリに移動
-        env::set_current_dir(&self.base_path).unwrap_or_else(|e| {
-            panic!("Failed to change directory to {:?}: {}", self.base_path, e)
-        });
+        let absolute_path = self
+            .base_path
+            .canonicalize()
+            .expect("Failed to get absolute path");
+        env::set_current_dir(&absolute_path)
+            .unwrap_or_else(|e| panic!("Failed to change directory to {:?}: {}", absolute_path, e));
 
-        // テスト関数を実行
         let result = test_fn();
 
-        // 元のディレクトリに戻る
         env::set_current_dir(original_dir).expect("Failed to restore original directory");
 
         result
