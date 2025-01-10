@@ -1,23 +1,23 @@
 ほげほげほげ
 
-#ef file1.js
+#ef examples/file1.js
 
 ふがふがふが
 
-#ef dir1/file2.md
+#ef examples/dir1/file2.md
 
 ぴよぴよぴよ
 
-#ef dir1/*
+#ef examples/dir1/*
 
 ぶひぶひぶひ
 
-#ef dir2/*.txt
+#ef examples/dir2/*.txt
 
 にやにやにや
 
-#ef dir2/**/*.txt
+#ef examples/dir2/**/*.txt
 
 げへげへげへ
 
-#efr dir2/file\d\.txt
+#efr examples/dir2/file\d\.txt

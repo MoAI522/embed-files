@@ -24,9 +24,21 @@ impl Warnings {
     }
 
     pub fn print_all(&self) {
-        for warning in &self.0 {
-            eprintln!("Warning: {}", warning);
+        if self.0.is_empty() {
+            return;
         }
+
+        eprintln!("{}", "\nWarnings:");
+
+        for warning in &self.0 {
+            eprintln!("{} {}", "⚠", "─".repeat(50));
+            let message = format!("{}", warning);
+
+            for line in message.lines() {
+                eprintln!("  {}", line);
+            }
+        }
+        eprintln!("{}", "─".repeat(52));
     }
 }
 

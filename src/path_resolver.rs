@@ -35,7 +35,7 @@ impl PathResolver {
                     } else {
                     }
                 }
-                Err(e) => {
+                Err(_) => {
                     self.warnings.push(Warning::FileNotFound {
                         path: PathBuf::from(pattern),
                     });
