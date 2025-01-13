@@ -47,9 +47,19 @@ impl EfTemplate {
         let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
         let relative_path = if file_path.is_absolute() {
-            // 絶対パスを現在のディレクトリからの相対パスに変換
-            if let Some(stripped_path) = pathdiff::diff_paths(file_path, &current_dir) {
-                stripped_path
+            // 両方のパスを正規化
+            if let (Ok(canonical_file), Ok(canonical_current)) =
+                (file_path.canonicalize(), current_dir.canonicalize())
+            {
+                // ファイルパスがカレントディレクトリ配下にあるかチェック
+                if canonical_file.starts_with(&canonical_current) {
+                    // カレントディレクトリ配下の場合は相対パスに変換
+                    pathdiff::diff_paths(&canonical_file, &canonical_current)
+                        .unwrap_or(canonical_file)
+                } else {
+                    // カレントディレクトリ配下でない場合は絶対パスを使用
+                    canonical_file
+                }
             } else {
                 file_path.to_path_buf()
             }
@@ -185,12 +195,15 @@ mod tests {
             result
         );
 
-        // ケース3: プロジェクト外のパスは相対パスに変換
+        // ケース3: プロジェクト外のパスは絶対パスのまま
         let outside_file = outside_dir.join("file.rs");
+        fs::write(&outside_file, "outside_file").unwrap();
+        let canonical_outside = outside_file.canonicalize().unwrap();
         let result = template.format(&outside_file, "content");
         assert!(
-            result.contains("../outside/file.rs"),
-            "Expected ../outside/file.rs, got: {}",
+            result.contains(&*canonical_outside.to_string_lossy()),
+            "Expected {}, got: {}",
+            canonical_outside.to_string_lossy(),
             result
         );
 

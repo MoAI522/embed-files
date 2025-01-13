@@ -13,7 +13,6 @@ impl TestEnv {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let base_path = temp_dir.path().to_path_buf();
 
-        // 基本ディレクトリ構造を作成
         Self::setup_directory_structure(&base_path);
 
         Self {
@@ -42,7 +41,6 @@ impl TestEnv {
 
         fs::write(&full_path, content).unwrap();
 
-        // カレントディレクトリからの相対パスを返す
         let current_dir = env::current_dir().unwrap();
         pathdiff::diff_paths(&full_path, &current_dir).unwrap_or_else(|| full_path.clone())
     }
@@ -55,10 +53,6 @@ impl TestEnv {
         self.create_file(".eftemplate", content)
     }
 
-    pub fn path(&self) -> &Path {
-        &self.base_path
-    }
-
     pub fn run_test_in_scope<F, R>(&self, test_fn: F) -> R
     where
         F: FnOnce() -> R,
@@ -69,6 +63,8 @@ impl TestEnv {
             .base_path
             .canonicalize()
             .expect("Failed to get absolute path");
+        println!("original_dir {}", original_dir.to_string_lossy());
+        println!("absolute_path {}", absolute_path.to_string_lossy());
         env::set_current_dir(&absolute_path)
             .unwrap_or_else(|e| panic!("Failed to change directory to {:?}: {}", absolute_path, e));
 
@@ -80,7 +76,6 @@ impl TestEnv {
     }
 }
 
-// サンプルファイルのセットアップ関数を改善
 pub fn setup_sample_files(env: &TestEnv) {
     env.create_file(
         "src/main.rs",
