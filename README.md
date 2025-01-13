@@ -1,10 +1,15 @@
 # embed-files (ef)
 
-`ef`は、複数のソースコードファイルをLLM（大規模言語モデル）のプロンプトに貼り付ける作業を簡略化するCLIツールです。
+`ef`は、複数のソースコードファイルを、主にチャット型LLMアプリケーションのプロンプトに貼り付ける作業を簡略化することを目的としたCLIツールです。
+
+コードエディタの拡張機能としてそういう機能は確かすでに存在しますが、API呼び出しで従量課金が発生するため、
+月額制のブラウザ上のチャットを使いたかったので作りました。
+
+およそ全ての実装をclaudeが行っています。使ったプロンプトの一部はprompts/に格納してあります。
 
 ## 使ってみよう
 
-**例：Reactコンポーネントのリファクタリング相談**
+**例：Reactコンポーネントのリファクタリングの相談**
 
 1. プロンプトのテンプレートとなるファイルを作成します（`prompt.txt`）：
 ```
@@ -31,7 +36,7 @@ ef prompt.txt
 - 状態管理の改善案
 
 src/components/TaskList.tsx
-\```tsx
+\```
 import React from 'react';
 import { TaskItem } from './TaskItem';
 import { useTasks } from '../hooks/useTasks';
@@ -49,14 +54,14 @@ export const TaskList: React.FC = () => {
 \```
 
 src/components/TaskItem.tsx
-\```tsx
+\```
 import React from 'react';
 
 ...
 \```
 
 src/hooks/useTasks.ts
-\```typescript
+\```
 ...
 \```
 ```
@@ -74,7 +79,7 @@ src/hooks/useTasks.ts
 
 ## インストール方法
 
-1. [Releases](https://github.com/username/embed-files/releases)から、お使いのプラットフォームに対応したバイナリをダウンロードしてください。
+1. [Releases](https://github.com/MoAI522/embed-files/releases)から、お使いのプラットフォームに対応したバイナリをダウンロードしてください。
    - macOS (Intel): `ef-x86_64-apple-darwin`
    - macOS (Apple Silicon): `ef-aarch64-apple-darwin`
    - Linux: `ef-x86_64-unknown-linux-gnu`
@@ -116,7 +121,6 @@ ef prompt.txt
 
 ```
 ファイル: {filePath}
-言語: {language}
 ==========
 {content}
 ==========
@@ -124,7 +128,6 @@ ef prompt.txt
 
 利用可能な変数：
 - `{filePath}`: ファイルパス
-- `{language}`: 強調構文表示用のアレ
 - `{content}`: ファイル内容
 
 `.eftemplate`は以下の順序で検索されます：
@@ -141,16 +144,18 @@ ef prompt.txt
 
 ```bash
 # macOS (Intel)
+rustup target add x86_64-apple-darwin
 cargo build --release --target x86_64-apple-darwin
 
 # macOS (Apple Silicon)
+rustup target add aarch64-apple-darwin
 cargo build --release --target aarch64-apple-darwin
 
 # Linux
+rustup target add x86_64-unknown-linux-gnu
 cargo build --release --target x86_64-unknown-linux-gnu
 
 # Windows
+rustup target add x86_64-pc-windows-msvc
 cargo build --release --target x86_64-pc-windows-msvc
 ```
-
-rustupでビルド用のなにかを事前に入れる必要あり。

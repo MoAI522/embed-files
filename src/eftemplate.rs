@@ -43,28 +43,22 @@ impl EfTemplate {
     }
 
     pub fn format(&self, file_path: &Path, content: &str) -> String {
-        let language = self.detect_language(file_path);
         let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
         let relative_path = if file_path.is_absolute() {
-            // 両方のパスを正規化
             if let (Ok(canonical_file), Ok(canonical_current)) =
                 (file_path.canonicalize(), current_dir.canonicalize())
             {
-                // ファイルパスがカレントディレクトリ配下にあるかチェック
                 if canonical_file.starts_with(&canonical_current) {
-                    // カレントディレクトリ配下の場合は相対パスに変換
                     pathdiff::diff_paths(&canonical_file, &canonical_current)
                         .unwrap_or(canonical_file)
                 } else {
-                    // カレントディレクトリ配下でない場合は絶対パスを使用
                     canonical_file
                 }
             } else {
                 file_path.to_path_buf()
             }
         } else {
-            // 相対パスはそのまま
             file_path.to_path_buf()
         };
 
@@ -76,25 +70,14 @@ impl EfTemplate {
 
         self.template
             .replace("{filePath}", &normalized_path)
-            .replace("{language}", &language)
             .replace("{content}", content)
-    }
-
-    fn detect_language(&self, path: &Path) -> String {
-        path.extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| {
-                crate::language_mapping::get_language_for_extension(ext)
-                    .unwrap_or_else(|| "plaintext".to_string())
-            })
-            .unwrap()
     }
 }
 
 impl Default for EfTemplate {
     fn default() -> Self {
         Self {
-            template: "{filePath}\n```{language}\n{content}\n```\n".to_string(),
+            template: "{filePath}\n{content}\n".to_string(),
         }
     }
 }
@@ -108,24 +91,21 @@ mod tests {
     #[test]
     fn test_default_template() {
         let template = EfTemplate::default();
-        // カレントディレクトリからの相対パスとして扱われるべき絶対パス
         let file_path = env::current_dir().unwrap().join("test.rs");
         let content = "fn main() {\n    println!(\"Hello\");\n}";
 
         let result = template.format(&file_path, content);
 
-        assert!(result.contains("test.rs")); // カレントディレクトリからの相対パスに変換されていることを確認
-        assert!(result.contains("```rust"));
+        assert!(result.contains("test.rs"));
         assert!(result.contains(content));
     }
 
     #[test]
     fn test_custom_template() {
         let temp_dir = tempdir().unwrap();
-        let template_content = "File: {filePath}\nType: {language}\n---\n{content}\n---\n";
+        let template_content = "File: {filePath}\n---\n{content}\n---\n";
         fs::write(temp_dir.path().join(".eftemplate"), template_content).unwrap();
 
-        // カレントディレクトリを一時ディレクトリに変更
         let original_dir = env::current_dir().unwrap();
         env::set_current_dir(&temp_dir).unwrap();
 
@@ -136,26 +116,9 @@ mod tests {
         let result = template.format(&file_path, content);
 
         assert!(result.contains("File: src/main.rs"));
-        assert!(result.contains("Type: rust"));
         assert!(result.contains(content));
 
-        // テスト終了後にカレントディレクトリを戻す
         env::set_current_dir(original_dir).unwrap();
-    }
-
-    #[test]
-    fn test_language_detection() {
-        let template = EfTemplate::default();
-        assert_eq!(template.detect_language(Path::new("test.rs")), "rust");
-        assert_eq!(
-            template.detect_language(Path::new("test.tsx")),
-            "typescript"
-        );
-        assert_eq!(template.detect_language(Path::new("test.js")), "javascript");
-        assert_eq!(
-            template.detect_language(Path::new("test.unknown")),
-            "plaintext"
-        );
     }
 
     #[test]

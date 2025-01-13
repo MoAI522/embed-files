@@ -16,9 +16,7 @@ fn test_basic_template_processing() {
 
         env.create_eftemplate(
             r#"File: {filePath}
-```{language}
-{content}
-```"#,
+{content}"#,
         );
 
         let args = vec!["ef".to_string(), template.to_str().unwrap().to_string()];
@@ -26,13 +24,11 @@ fn test_basic_template_processing() {
 
         assert!(output.contains("Here is the main file:"));
         assert!(output.contains("File: src/main.rs"));
-        assert!(output.contains("```rust"));
         assert!(output.contains(
             r#"fn main() {
     println!("Hello, world!");
 }"#
         ));
-        assert!(output.contains("```"));
     })
 }
 
@@ -50,7 +46,6 @@ fn test_glob_pattern_expansion() {
 
         env.create_eftemplate(
             r#"=== {filePath} ===
-Language: {language}
 {content}
 ==========="#,
         );
@@ -61,7 +56,6 @@ Language: {language}
         assert!(output.contains("All source files:"));
         assert!(output.contains("=== src/main.rs ==="));
         assert!(output.contains("=== src/lib.rs ==="));
-        assert!(output.contains("Language: rust"));
         assert!(output.contains(
             r#"fn main() {
     println!("Hello, world!");
@@ -93,7 +87,6 @@ fn test_regex_pattern_expansion() {
         assert!(output.contains("All rust files:"));
         assert!(output.contains("src/main.rs"));
         assert!(output.contains("src/lib.rs"));
-        assert!(output.contains("```rust"));
     })
 }
 
@@ -114,8 +107,6 @@ fn test_no_eftemplate_uses_default() {
 
         assert!(output.contains("Main source:"));
         assert!(output.contains("src/main.rs"));
-        assert!(output.contains("```rust"));
-        assert!(output.contains("```"));
     })
 }
 
@@ -123,7 +114,7 @@ fn test_no_eftemplate_uses_default() {
 fn test_eftemplate_inheritance() {
     let env = TestEnv::new();
     env.run_test_in_scope(|| {
-        env.create_eftemplate("ROOT: {filePath} ({language})\n{content}");
+        env.create_eftemplate("ROOT: {filePath}\n{content}");
 
         let template = env.create_file(
             "subdir/template.txt",
@@ -131,10 +122,7 @@ fn test_eftemplate_inheritance() {
 #ef src/main.rs
 "#,
         );
-        env.create_file(
-            "subdir/.eftemplate",
-            "SUB: {filePath} ({language})\n{content}",
-        );
+        env.create_file("subdir/.eftemplate", "SUB: {filePath}\n{content}");
 
         common::setup_sample_files(&env);
 
