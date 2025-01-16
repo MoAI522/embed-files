@@ -77,7 +77,7 @@ impl EfTemplate {
 impl Default for EfTemplate {
     fn default() -> Self {
         Self {
-            template: "{filePath}\n{content}\n".to_string(),
+            template: "{filePath}\n```\n{content}\n```\n".to_string(),
         }
     }
 }
